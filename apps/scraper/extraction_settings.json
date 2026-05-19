@@ -1,0 +1,21 @@
+{
+    "url_scraping": [
+        "https://www.ynet.co.il/news/article/hkfhxptjml",
+        "https://www.ynet.co.il/news/article/bjrnqkokmx"
+        
+    ],
+
+    "limitation_by_class": {
+        "ynet": [
+            "mainTitleWrapper",
+            "subTitleWrapper",
+            "text_editor_paragraph"
+        ]
+    },
+
+    "extra_data_by_class": {
+        "ynet": [
+            "tagName"
+        ]
+    }
+}
