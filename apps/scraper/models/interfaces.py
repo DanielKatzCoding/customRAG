@@ -13,3 +13,17 @@ class BaseScraper(ABC):
     @abstractmethod
     async def fetch_html(self, url: str) -> str:
         pass
+
+
+class BaseSiteResolver(ABC):
+    """Resolves a URL to a site key used to look up extraction rules."""
+    @abstractmethod
+    def resolve(self, url: str) -> str | None:
+        pass
+
+
+class BaseParserProvider(ABC):
+    """Factory abstraction: yields the right parser strategy for a given URL."""
+    @abstractmethod
+    def for_url(self, url: str) -> BaseParser:
+        pass
