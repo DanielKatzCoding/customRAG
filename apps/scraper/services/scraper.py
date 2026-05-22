@@ -1,35 +1,23 @@
-# scrapers.py
-import asyncio
-import random
+import httpx
 
 from config import StealthConfig
 from models.interfaces import BaseScraper
-from playwright.async_api import async_playwright
 
 
-class PlaywrightStealthScraper(BaseScraper):
-    """Concrete Strategy implementing human-like Playwright scraping."""
+class HttpScraper(BaseScraper):
+    """Concrete Strategy that fetches HTML via async HTTP requests."""
+
     def __init__(self, config: StealthConfig):
-        self.config = config
+        self._config = config
 
     async def fetch_html(self, url: str) -> str:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            context_options = self.config.get_browser_context_options()
-            context = await browser.new_context(**context_options)
-            page = await context.new_page()
-
-            # Hide automation footprints
-            await page.add_init_script("delete navigator.__proto__.webdriver;")
-
-            try:
-                await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-
-                # Simulate human interaction (random scroll)
-                await page.evaluate("window.scrollBy(0, window.innerHeight);")
-                await asyncio.sleep(random.uniform(2, 5))
-
-                return await page.content()
-            finally:
-                await context.close()
-                await browser.close()
+        async with httpx.AsyncClient(
+            headers=self._config.build_headers(),
+            timeout=self._config.timeout_seconds,
+            follow_redirects=True,
+            proxy=self._config.proxy,
+            http2=True,
+        ) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            return response.text
