@@ -5,41 +5,55 @@ An async, rule-based web scraper that extracts structured content from target UR
 ## Features
 
 - **Class-filtered extraction** — pull only the elements you care about, defined per site in `extraction_settings.json`
-- **Structured JSON output** — each scraped URL produces `{ url, content, extras }` in `output_scrape/`
-- **Async HTTP** — lightweight `httpx` client with HTTP/2, stealth headers, and redirect following (no browser dependency)
+- **Structured JSON output** — each scraped URL produces `{ url, content, extras }` written atomically to `output_scrape/`
+- **Async HTTP/2** — single shared `httpx` client with connection pooling, stealth headers, 10 MB body cap, and redirect logging
 - **Rich console** — live progress bar with spinner, URL tracking, and structured logging via `rich`
-- **SOLID architecture** — Strategy, Factory, and Facade patterns; all core seams are interface-driven
+- **Environment-driven config** — `pydantic-settings` reads `SCRAPER_*` vars from the repo-root `.env` file
+- **SOLID architecture** — Strategy, Factory, Facade, and Sink patterns; all core seams are interface-driven
 
 ## Project Structure
 
 ```
 apps/scraper/
 ├── extraction_settings.json   # URLs and per-site CSS class rules
-├── output_scrape/              # Generated JSON output (git-ignored)
-├── config.py                  # StealthConfig — rotating User-Agent + headers
+├── output_scrape/             # Generated JSON output (git-ignored)
+├── config.py                  # ScraperSettings (pydantic-settings) + StealthConfig
 ├── main.py                    # Entry point — wires dependencies, runs loop
 │
 ├── core/
-│   ├── logging_setup.py       # Configures RichHandler for structured logging
-│   ├── settings_loader.py     # Loads extraction_settings.json → ExtractionSettings
-│   ├── site_resolver.py       # Maps URL host → site key (e.g. "ynet")
-│   └── utils.py               # safe_name() for filesystem-safe filenames
+│   ├── logging_setup.py       # RichHandler with force=True, silences httpx noise
+│   ├── settings_loader.py     # Validates + loads extraction_settings.json → ExtractionSettings
+│   ├── site_resolver.py       # Maps URL host tokens → site key (e.g. "ynet")
+│   └── utils.py               # safe_name() — length-capped, hash-suffixed filename stem
 │
 ├── models/
-│   ├── interfaces.py          # BaseParser, BaseScraper, BaseSiteResolver, BaseParserProvider
-│   ├── result.py              # ParseResult(content, extras)
-│   └── settings.py            # ExtractionSettings, SiteExtractionRule dataclasses
+│   ├── interfaces.py          # BaseParser, BaseScraper, BaseSiteResolver, BaseParserProvider, BaseSink
+│   ├── result.py              # ParseResult(content: list[str], extras: dict[str, list[str]])
+│   └── settings.py            # ExtractionSettings, SiteExtractionRule (frozen, MappingProxyType)
 │
 └── services/
-    ├── facade.py              # Scraper — orchestrates fetch → parse pipeline
+    ├── facade.py              # ScrapingFacade — orchestrates fetch → parse pipeline
     ├── parser.py              # TextContentParser, ClassFilteredParser (Strategy)
     ├── parser_factory.py      # RuleBasedParserProvider (Factory)
-    └── scraper.py             # HttpScraper (httpx-based)
+    ├── scraper.py             # HttpScraper — async context manager, shared client
+    └── sink.py                # JsonFileSink — atomic file writes (BaseSink implementation)
 ```
 
 ## Configuration
 
-Edit `extraction_settings.json` to add URLs and per-site extraction rules:
+### Environment variables
+
+Settings are read from `<repo-root>/.env` (copy `.env.example` to get started):
+
+| Variable | Default | Description |
+|---|---|---|
+| `SCRAPER_TIMEOUT_SECONDS` | `30.0` | Per-request HTTP timeout |
+| `SCRAPER_ACCEPT_LANGUAGE` | `en-US,en;q=0.9,he;q=0.8` | `Accept-Language` header value |
+| `SCRAPER_PROXY` | _(none)_ | Optional HTTP/SOCKS proxy URL |
+
+### Extraction rules
+
+Edit `extraction_settings.json` to control which URLs are scraped and how:
 
 ```json
 {
@@ -56,14 +70,12 @@ Edit `extraction_settings.json` to add URLs and per-site extraction rules:
 ```
 
 | Field | Description |
-|-------|-------------|
-| `url_scraping` | List of URLs to scrape |
+|---|---|
+| `url_scraping` | List of `http`/`https` URLs to scrape (validated at startup) |
 | `limitation_by_class` | Per-site CSS classes whose text forms the `content` array |
-| `extra_data_by_class` | Per-site CSS classes whose text forms the `extras` array |
+| `extra_data_by_class` | Per-site CSS classes whose text forms the `extras` dict (keyed by class name) |
 
-The site key (e.g. `"example"`) is matched against the URL hostname — no code changes needed to add a new site.
-
-If no rule exists for a URL's host, the scraper falls back to full-page text extraction.
+The site key (e.g. `"example"`) is matched against dot-separated hostname tokens — no code changes needed to add a new site. If no rule exists for a URL's host, the scraper falls back to full-page text extraction.
 
 ## Output Format
 
@@ -77,32 +89,35 @@ Each URL produces a file in `output_scrape/<safe_url>.json`:
     "Subtitle",
     "First paragraph..."
   ],
-  "extras": [
-    "breaking news",
-    "politics"
-  ]
+  "extras": {
+    "tagName": ["breaking news", "politics"]
+  }
 }
 ```
+
+`extras` is keyed by the CSS class name so consumers know the origin of each extracted value.
 
 ## Setup
 
 ```bash
+# From the repo root
+cp .env.example .env   # then edit .env as needed
 uv sync
-# or
-pip install -e .
 ```
 
 ## Usage
 
 ```bash
+cd apps/scraper
 python main.py
 ```
 
 ## Dependencies
 
 | Package | Purpose |
-|---------|---------|
-| `httpx[http2]` | Async HTTP client |
-| `bs4` | HTML parsing |
+|---|---|
+| `httpx[http2]` | Async HTTP/2 client |
+| `beautifulsoup4` | HTML parsing |
 | `aiofiles` | Async file I/O |
 | `rich` | Progress bar and structured logging |
+| `pydantic-settings` | Typed config from environment / `.env` |
