@@ -1,3 +1,6 @@
+# Generated dirs
+output_scrape/
+
 # Python-generated files
 __pycache__/
 *.py[oc]

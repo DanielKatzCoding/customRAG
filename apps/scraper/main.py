@@ -26,7 +26,7 @@ from services import (
 )
 
 SETTINGS_PATH = Path(__file__).parent / "extraction_settings.json"
-OUTPUT_DIR = Path(__file__).parent / "output_scrap"
+OUTPUT_DIR = Path(__file__).parent / "output_scrape"
 
 logger = logging.getLogger(__name__)
 
