@@ -3,6 +3,10 @@ import logging
 import random
 from pathlib import Path
 
+from config import ScraperSettings, StealthConfig
+from core.logging_setup import setup_logging
+from core.settings_loader import ExtractionSettingsLoader
+from core.site_resolver import DomainKeywordSiteResolver
 from rich.markup import escape
 from rich.progress import (
     BarColumn,
@@ -12,11 +16,6 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
 )
-
-from config import StealthConfig
-from core.logging_setup import setup_logging
-from core.settings_loader import ExtractionSettingsLoader
-from core.site_resolver import DomainKeywordSiteResolver
 from services import (
     HttpScraper,
     JsonFileSink,
@@ -38,7 +37,7 @@ async def main() -> None:
     settings = ExtractionSettingsLoader(SETTINGS_PATH).load()
 
     # 2. Compose dependencies (DIP / Dependency Injection)
-    stealth_config = StealthConfig()
+    stealth_config = StealthConfig.from_settings(ScraperSettings())
     site_resolver = DomainKeywordSiteResolver(known_keys=tuple(settings.rules.keys()))
     parser_provider = RuleBasedParserProvider(settings=settings, resolver=site_resolver)
     sink = JsonFileSink(OUTPUT_DIR)

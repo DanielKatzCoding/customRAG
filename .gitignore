@@ -1,3 +1,6 @@
+# Secrets / local environment overrides
+.env
+
 # Generated dirs
 output_scrape/
 
