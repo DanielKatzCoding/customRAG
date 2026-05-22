@@ -2,6 +2,7 @@ from .interfaces import (
     BaseParser,
     BaseParserProvider,
     BaseScraper,
+    BaseSink,
     BaseSiteResolver,
 )
 from .result import ParseResult
@@ -11,6 +12,7 @@ __all__ = [
     "BaseParser",
     "BaseParserProvider",
     "BaseScraper",
+    "BaseSink",
     "BaseSiteResolver",
     "ExtractionSettings",
     "ParseResult",

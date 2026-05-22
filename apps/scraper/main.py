@@ -1,10 +1,9 @@
 import asyncio
-import json
 import logging
 import random
 from pathlib import Path
 
-import aiofiles
+from rich.markup import escape
 from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
@@ -18,11 +17,11 @@ from config import StealthConfig
 from core.logging_setup import setup_logging
 from core.settings_loader import ExtractionSettingsLoader
 from core.site_resolver import DomainKeywordSiteResolver
-from core.utils import safe_name
 from services import (
     HttpScraper,
+    JsonFileSink,
     RuleBasedParserProvider,
-    Scraper,
+    ScrapingFacade,
 )
 
 SETTINGS_PATH = Path(__file__).parent / "extraction_settings.json"
@@ -31,48 +30,43 @@ OUTPUT_DIR = Path(__file__).parent / "output_scrape"
 logger = logging.getLogger(__name__)
 
 
-async def main():
+async def main() -> None:
     setup_logging()
     OUTPUT_DIR.mkdir(exist_ok=True)
 
-    # 1. Load extraction configuration (URLs + per-site class rules)
+    # 1. Load and validate extraction configuration (URLs + per-site class rules)
     settings = ExtractionSettingsLoader(SETTINGS_PATH).load()
 
     # 2. Compose dependencies (DIP / Dependency Injection)
     stealth_config = StealthConfig()
-    scraper_engine = HttpScraper(stealth_config)
     site_resolver = DomainKeywordSiteResolver(known_keys=tuple(settings.rules.keys()))
     parser_provider = RuleBasedParserProvider(settings=settings, resolver=site_resolver)
+    sink = JsonFileSink(OUTPUT_DIR)
 
-    # 3. Facade orchestrator
-    bot = Scraper(scraper=scraper_engine, parser_provider=parser_provider)
+    # 3. Run pipeline — client is created once and reused across all URLs
+    async with HttpScraper(stealth_config) as scraper_engine:
+        pipeline = ScrapingFacade(scraper=scraper_engine, parser_provider=parser_provider)
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[bold blue]{task.description}"),
-        BarColumn(),
-        MofNCompleteColumn(),
-        TimeElapsedColumn(),
-    ) as progress:
-        task = progress.add_task("Scraping", total=len(settings.urls))
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+        ) as progress:
+            task = progress.add_task("Scraping", total=len(settings.urls))
 
-        for url in settings.urls:
-            progress.update(task, description=f"[bold blue]{url}")
-            result = await bot.scrape(url)
+            for i, url in enumerate(settings.urls):
+                progress.update(task, description=f"[bold blue]{escape(url)}[/bold blue]")
+                result = await pipeline.scrape(url)
 
-            if result and not result.is_empty:
-                payload = {
-                    "url": url,
-                    "content": result.content,
-                    "extras": result.extras,
-                }
-                out_path = OUTPUT_DIR / f"{safe_name(url)}.json"
-                async with aiofiles.open(out_path, "w", encoding="utf-8") as f:
-                    await f.write(json.dumps(payload, ensure_ascii=False, indent=2))
-                logger.info("Saved %d content items to %s", len(result.content), out_path.name)
+                if result and not result.is_empty:
+                    await sink.save(url, result)
 
-            progress.advance(task)
-            await asyncio.sleep(random.uniform(3, 6))
+                progress.advance(task)
+
+                if i < len(settings.urls) - 1:
+                    await asyncio.sleep(random.uniform(3, 6))
 
     logger.info("Done — scraped %d URL(s)", len(settings.urls))
 

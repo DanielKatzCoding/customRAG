@@ -1,35 +1,45 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .result import ParseResult
+from .result import ParseResult
 
 
 class BaseParser(ABC):
-    """Interface for processing content (SRP)."""
+    """Interface for processing HTML content."""
+
     @abstractmethod
-    def parse(self, html: str) -> "ParseResult":
-        pass
+    def parse(self, html: str) -> ParseResult:
+        ...
 
 
 class BaseScraper(ABC):
-    """Abstract Strategy interface for all scrapers."""
+    """Abstract Strategy interface for all HTTP fetchers."""
+
     @abstractmethod
     async def fetch_html(self, url: str) -> str:
-        pass
+        ...
 
 
 class BaseSiteResolver(ABC):
     """Resolves a URL to a site key used to look up extraction rules."""
+
     @abstractmethod
     def resolve(self, url: str) -> str | None:
-        pass
+        ...
 
 
 class BaseParserProvider(ABC):
     """Factory abstraction: yields the right parser strategy for a given URL."""
+
     @abstractmethod
     def for_url(self, url: str) -> BaseParser:
-        pass
+        ...
+
+
+class BaseSink(ABC):
+    """Persists a scrape result for a given URL."""
+
+    @abstractmethod
+    async def save(self, url: str, result: ParseResult) -> None:
+        ...

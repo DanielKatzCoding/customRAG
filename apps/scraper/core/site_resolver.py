@@ -5,10 +5,10 @@ from models import BaseSiteResolver
 
 class DomainKeywordSiteResolver(BaseSiteResolver):
     """
-    Resolves a URL to a site key by matching known keys against the URL host.
+    Resolves a URL to a site key by matching known keys against hostname tokens.
 
-    Example: known_keys=["ynet"] + url=https://www.ynet.co.il/... -> "ynet".
-    Keeps O/CP: adding a new site is configuration, not code.
+    Uses dot-split token matching (not substring) so "abc" matches "abc.com"
+    but not "myabcsite.com". Keeps O/CP: adding a new site is configuration, not code.
     """
 
     def __init__(self, known_keys: tuple[str, ...] | list[str]):
@@ -16,7 +16,8 @@ class DomainKeywordSiteResolver(BaseSiteResolver):
 
     def resolve(self, url: str) -> str | None:
         host = (urlparse(url).hostname or "").lower()
+        tokens = set(host.split("."))
         for key in self._known_keys:
-            if key.lower() in host:
+            if key.lower() in tokens:
                 return key
         return None

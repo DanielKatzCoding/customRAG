@@ -1,11 +1,11 @@
 # Scraper
 
-An async, rule-based web scraper that extracts structured content from target URLs using CSS class filtering. Output is written as JSON to `output_scrap/`.
+An async, rule-based web scraper that extracts structured content from target URLs using CSS class filtering. Output is written as JSON to `output_scrape/`.
 
 ## Features
 
 - **Class-filtered extraction** — pull only the elements you care about, defined per site in `extraction_settings.json`
-- **Structured JSON output** — each scraped URL produces `{ url, content, extras }` in `output_scrap/`
+- **Structured JSON output** — each scraped URL produces `{ url, content, extras }` in `output_scrape/`
 - **Async HTTP** — lightweight `httpx` client with HTTP/2, stealth headers, and redirect following (no browser dependency)
 - **Rich console** — live progress bar with spinner, URL tracking, and structured logging via `rich`
 - **SOLID architecture** — Strategy, Factory, and Facade patterns; all core seams are interface-driven
@@ -15,7 +15,7 @@ An async, rule-based web scraper that extracts structured content from target UR
 ```
 apps/scraper/
 ├── extraction_settings.json   # URLs and per-site CSS class rules
-├── output_scrap/              # Generated JSON output (git-ignored)
+├── output_scrape/              # Generated JSON output (git-ignored)
 ├── config.py                  # StealthConfig — rotating User-Agent + headers
 ├── main.py                    # Entry point — wires dependencies, runs loop
 │
@@ -67,7 +67,7 @@ If no rule exists for a URL's host, the scraper falls back to full-page text ext
 
 ## Output Format
 
-Each URL produces a file in `output_scrap/<safe_url>.json`:
+Each URL produces a file in `output_scrape/<safe_url>.json`:
 
 ```json
 {
