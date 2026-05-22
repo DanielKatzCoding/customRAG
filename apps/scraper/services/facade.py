@@ -1,6 +1,6 @@
 import logging
 
-from models import BaseParserProvider, BaseScraper
+from models import BaseParserProvider, BaseScraper, ParseResult
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ class Scraper:
         self._scraper = scraper
         self._parser_provider = parser_provider
 
-    async def scrape_to_text(self, url: str) -> str:
+    async def scrape(self, url: str) -> ParseResult | None:
         try:
             logger.info("Fetching: %s", url)
             raw_html = await self._scraper.fetch_html(url)
@@ -22,4 +22,4 @@ class Scraper:
             return parser.parse(raw_html)
         except Exception as e:
             logger.error("Pipeline failed for %s: %s", url, e)
-            return ""
+            return None

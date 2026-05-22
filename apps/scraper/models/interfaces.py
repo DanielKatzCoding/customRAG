@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .result import ParseResult
 
 
 class BaseParser(ABC):
     """Interface for processing content (SRP)."""
     @abstractmethod
-    def parse(self, html: str) -> str:
+    def parse(self, html: str) -> "ParseResult":
         pass
 
 

@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import random
 from pathlib import Path
@@ -25,12 +26,14 @@ from services import (
 )
 
 SETTINGS_PATH = Path(__file__).parent / "extraction_settings.json"
+OUTPUT_DIR = Path(__file__).parent / "output_scrap"
 
 logger = logging.getLogger(__name__)
 
 
 async def main():
     setup_logging()
+    OUTPUT_DIR.mkdir(exist_ok=True)
 
     # 1. Load extraction configuration (URLs + per-site class rules)
     settings = ExtractionSettingsLoader(SETTINGS_PATH).load()
@@ -55,12 +58,18 @@ async def main():
 
         for url in settings.urls:
             progress.update(task, description=f"[bold blue]{url}")
-            text = await bot.scrape_to_text(url)
+            result = await bot.scrape(url)
 
-            if text:
-                logger.info("Extracted %d chars from %s", len(text), url)
-                async with aiofiles.open(f"{safe_name(url)}.txt", "w", encoding="utf-8") as f:
-                    await f.write(text)
+            if result and not result.is_empty:
+                payload = {
+                    "url": url,
+                    "content": result.content,
+                    "extras": result.extras,
+                }
+                out_path = OUTPUT_DIR / f"{safe_name(url)}.json"
+                async with aiofiles.open(out_path, "w", encoding="utf-8") as f:
+                    await f.write(json.dumps(payload, ensure_ascii=False, indent=2))
+                logger.info("Saved %d content items to %s", len(result.content), out_path.name)
 
             progress.advance(task)
             await asyncio.sleep(random.uniform(3, 6))

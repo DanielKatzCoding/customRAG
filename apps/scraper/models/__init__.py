@@ -4,6 +4,7 @@ from .interfaces import (
     BaseScraper,
     BaseSiteResolver,
 )
+from .result import ParseResult
 from .settings import ExtractionSettings, SiteExtractionRule
 
 __all__ = [
@@ -12,5 +13,6 @@ __all__ = [
     "BaseScraper",
     "BaseSiteResolver",
     "ExtractionSettings",
+    "ParseResult",
     "SiteExtractionRule",
 ]
