@@ -1,5 +1,12 @@
 from .facade import Scraper
-from .parser import TextContentParser
-from .scraper import PlaywrightStealthScraper
+from .parser import ClassFilteredParser, TextContentParser
+from .parser_factory import RuleBasedParserProvider
+from .scraper import HttpScraper
 
-__all__ = ["Scraper", "TextContentParser", "PlaywrightStealthScraper"]
+__all__ = [
+    "ClassFilteredParser",
+    "HttpScraper",
+    "RuleBasedParserProvider",
+    "Scraper",
+    "TextContentParser",
+]

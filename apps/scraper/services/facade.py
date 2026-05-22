@@ -1,21 +1,25 @@
-from models.interfaces import BaseParser, BaseScraper
+import logging
+
+from models import BaseParserProvider, BaseScraper
+
+logger = logging.getLogger(__name__)
 
 
 class Scraper:
     """
-    Facade class that simplifies high-level scraping operations.
-    Combines the configuration, scraper engine, and parser.
+    Facade that orchestrates the scraping pipeline.
+    Depends on abstractions (DIP): a scraper engine and a parser provider.
     """
-    def __init__(self, scraper: BaseScraper, parser: BaseParser):
-        self.scraper = scraper
-        self.parser = parser
+    def __init__(self, scraper: BaseScraper, parser_provider: BaseParserProvider):
+        self._scraper = scraper
+        self._parser_provider = parser_provider
 
     async def scrape_to_text(self, url: str) -> str:
         try:
-            print(f"Executing stealth fetch for: {url}")
-            raw_html = await self.scraper.fetch_html(url)
-            clean_text = self.parser.parse(raw_html)
-            return clean_text
+            logger.info("Fetching: %s", url)
+            raw_html = await self._scraper.fetch_html(url)
+            parser = self._parser_provider.for_url(url)
+            return parser.parse(raw_html)
         except Exception as e:
-            print(f"Scraping pipeline failed for {url}: {e}")
+            logger.error("Pipeline failed for %s: %s", url, e)
             return ""
