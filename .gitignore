@@ -1,6 +1,9 @@
 # Secrets / local environment overrides
 .env
 
+# Logs
+server.log
+
 # Generated dirs
 output_scrape/
 
