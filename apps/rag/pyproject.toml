@@ -1,0 +1,23 @@
+[project]
+name = "rag"
+version = "0.1.0"
+description = "Hebrew RAG service — semantic chunking with DictaBERT + ChromaDB"
+readme = "README.md"
+authors = [
+    { name = "Daniel Katz", email = "katzz.daniel@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic-settings>=2.3.0",
+    "aiofiles>=25.1.0",
+    "rich>=13.0.0",
+    "transformers>=4.40.0",
+    "torch>=2.2.0",
+    "numpy>=1.26.0",
+    "chromadb>=0.5.0",
+    "langchain-core>=0.2.0",
+    "langchain-text-splitters>=0.2.0",
+    "langchain-experimental>=0.0.60",
+]
