@@ -1,10 +1,12 @@
 {
     "url_scraping": [
         "https://www.ynet.co.il/news/article/hkfhxptjml",
-        "https://www.ynet.co.il/news/article/bjrnqkokmx"
-        
+        "https://www.ynet.co.il/news/article/bjrnqkokmx",
+        "https://www.ynet.co.il/news/article/h1wpkjayzx",
+        "https://www.ynet.co.il/news/article/rjkjor61zl",
+        "https://www.ynet.co.il/news/article/sy6q6y61mg",
+        "https://www.ynet.co.il/news/article/r1c4umtymx"
     ],
-
     "limitation_by_class": {
         "ynet": [
             "mainTitleWrapper",
@@ -12,7 +14,6 @@
             "text_editor_paragraph"
         ]
     },
-
     "extra_data_by_class": {
         "ynet": [
             "tagName"
