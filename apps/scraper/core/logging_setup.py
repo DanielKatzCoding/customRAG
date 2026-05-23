@@ -3,9 +3,9 @@ import logging
 from rich.logging import RichHandler
 
 
-def setup_logging(level: int = logging.INFO) -> None:
+def setup_logging(level: str = "INFO") -> None:
     logging.basicConfig(
-        level=level,
+        level=level.upper(),
         format="%(message)s",
         datefmt="[%X]",
         handlers=[RichHandler(rich_tracebacks=True, markup=False)],

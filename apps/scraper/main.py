@@ -24,23 +24,24 @@ from services import (
 )
 
 SETTINGS_PATH = Path(__file__).parent / "extraction_settings.json"
-OUTPUT_DIR = Path(__file__).parent / "output_scrape"
 
 logger = logging.getLogger(__name__)
 
 
 async def main() -> None:
-    setup_logging()
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    scraper_settings = ScraperSettings()
+    setup_logging(scraper_settings.log_level)
+    output_dir = Path(scraper_settings.output_dir)
+    output_dir.mkdir(exist_ok=True)
 
     # 1. Load and validate extraction configuration (URLs + per-site class rules)
     settings = ExtractionSettingsLoader(SETTINGS_PATH).load()
 
     # 2. Compose dependencies (DIP / Dependency Injection)
-    stealth_config = StealthConfig.from_settings(ScraperSettings())
+    stealth_config = StealthConfig.from_settings(scraper_settings)
     site_resolver = DomainKeywordSiteResolver(known_keys=tuple(settings.rules.keys()))
     parser_provider = RuleBasedParserProvider(settings=settings, resolver=site_resolver)
-    sink = JsonFileSink(OUTPUT_DIR)
+    sink = JsonFileSink(output_dir)
 
     # 3. Run pipeline — client is created once and reused across all URLs
     async with HttpScraper(stealth_config) as scraper_engine:
